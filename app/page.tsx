@@ -65,9 +65,9 @@ export default function LandingPage() {
                 <Link href="/login">
                   <Button size="lg" variant="outline">Iniciar sesión</Button>
                 </Link>
-                <Link href="/register-tenant">
+                <Link href="/register">
                   <Button size="lg" className="gap-2">
-                    Crear mi campo
+                    Crear mi empresa
                     <ArrowRight className="size-4" />
                   </Button>
                 </Link>

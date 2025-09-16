@@ -1,5 +1,47 @@
 // Tipos globales para el sistema agrícola multi-tenant
 
+// Tipos para el sistema multi-tenant
+export interface Tenant {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  primary_crop: string
+  contact_email: string
+  created_by: string
+  created_at: string
+}
+
+export interface TenantMembership {
+  id: string
+  tenant_id: string
+  user_id: string
+  role_code: 'admin' | 'user' | 'viewer'
+  status: 'active' | 'pending' | 'inactive'
+  invited_by?: string
+  accepted_at?: string
+}
+
+export interface TenantModule {
+  tenant_id: string
+  module_code: string
+  enabled: boolean
+  created_at: string
+}
+
+export interface CreateTenantRequest {
+  name: string
+  slug: string
+  plan: string
+  primary_crop: string
+  contact_email: string
+  admin_user: {
+    email: string
+    password: string
+    full_name: string
+  }
+}
+
 export interface TareaCampo {
   id: string
   tenantId: string

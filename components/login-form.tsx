@@ -2,15 +2,17 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
+import { Alert, AlertDescription } from "./ui/alert"
 import { authService } from "../lib/auth"
 
 interface LoginFormProps {
-  onLoginSuccess: () => void
+  onLoginSuccess?: () => void
 }
 
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
@@ -18,6 +20,18 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const tenantSlug = searchParams.get('tenant')
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const currentUser = authService.getCurrentUser()
+    if (currentUser) {
+      router.push("/home")
+    }
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,8 +39,13 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
     setError("")
 
     try {
-      await authService.login(email, password)
-      onLoginSuccess()
+      await authService.login(email, password, tenantSlug || undefined)
+      
+      if (onLoginSuccess) {
+        onLoginSuccess()
+      } else {
+        router.push("/home")
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión")
     } finally {
@@ -43,10 +62,22 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <img src="/seedor-logo.png" alt="Seedor" className="h-20 w-auto drop-shadow" />
             </div>
             <CardTitle className="text-3xl font-bold mb-2 w-full text-center">Iniciar sesión</CardTitle>
-            <CardDescription className="mb-2 w-full text-center">Ingresa a tu plataforma de gestión agropecuaria</CardDescription>
+            <CardDescription className="mb-2 w-full text-center">
+              {tenantSlug ? (
+                <>Accede a <strong>{tenantSlug}</strong></>
+              ) : (
+                "Ingresa a tu plataforma de gestión agropecuaria"
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent className="w-full p-0">
             <form onSubmit={handleSubmit} className="space-y-6 w-full">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-4 w-full">
                 <Label htmlFor="email" className="w-full">Correo electrónico</Label>
                 <Input
@@ -71,34 +102,35 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                   className="h-12 text-base px-4 w-full"
                 />
               </div>
-              {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md w-full">{error}</div>}
+              
               <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={isLoading}>
                 {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
               </Button>
             </form>
-            <Button
-              variant="outline"
-              className="w-full mt-4"
-              onClick={() => window.location.href = "/"}
-            >
-              Volver a la página principal
-            </Button>
-            <div className="mt-8 text-sm text-muted-foreground w-full">
-              <p className="font-medium mb-2">Usuarios de prueba:</p>
-              <div className="space-y-1 text-xs">
-                <p>
-                  <strong>Admin:</strong> admin@latoma.com
-                </p>
-                <p>
-                  <strong>Campo:</strong> campo@latoma.com
-                </p>
-                <p>
-                  <strong>Empaque:</strong> empaque@latoma.com
-                </p>
-                <p>
-                  <strong>Finanzas:</strong> finanzas@latoma.com
-                </p>
-              </div>
+            
+            <div className="flex flex-col space-y-2 mt-4">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => router.push("/")}
+              >
+                Volver a la página principal
+              </Button>
+              
+              <Button
+                variant="link"
+                className="w-full"
+                onClick={() => router.push("/register")}
+              >
+                ¿No tienes cuenta? Crear empresa
+              </Button>
+            </div>
+
+            <div className="mt-8 text-sm text-muted-foreground w-full text-center">
+              <p className="text-xs">
+                Sistema de gestión agrícola integral con control de empaque, 
+                inventario, finanzas y tareas de campo.
+              </p>
             </div>
           </CardContent>
         </Card>
