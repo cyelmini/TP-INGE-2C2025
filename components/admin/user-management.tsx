@@ -98,6 +98,40 @@ export function UserManagement({ currentUser }: UserManagementProps) {
     try {
       setLoading(true)
       
+      // Check if in demo mode
+      const isDemoMode = document.cookie.split(';').some(c => c.trim().startsWith('demo=1'))
+
+      if (isDemoMode) {
+        console.log('🎭 UserManagement: Demo mode detected, loading mock users')
+        // In demo mode, call API without authentication
+        const response = await fetch('/api/admin/users')
+
+        if (response.ok) {
+          const data = await response.json()
+          const transformedUsers = (data.users || []).map((worker: any) => ({
+            id: worker.id,
+            email: worker.email,
+            full_name: worker.full_name,
+            role_code: worker.membership?.role_code || worker.area_module,
+            status: worker.status,
+            created_at: worker.created_at,
+            accepted_at: worker.membership?.accepted_at
+          }))
+
+          console.log('🎭 UserManagement: Mock users loaded:', transformedUsers)
+          setUsers(transformedUsers)
+        } else {
+          console.error('🎭 UserManagement: Failed to load mock users')
+          toast({
+            title: 'Error al cargar usuarios',
+            description: 'No se pudieron cargar los usuarios de la demo',
+            variant: 'destructive'
+          })
+        }
+        return
+      }
+
+      // Normal mode - require authentication
       const { supabase } = await import('../../lib/supabaseClient')
       const { data: { session } } = await supabase.auth.getSession()
       
@@ -218,6 +252,62 @@ export function UserManagement({ currentUser }: UserManagementProps) {
     setSubmitting(true)
     
     try {
+      // Check if in demo mode
+      const isDemoMode = document.cookie.split(';').some(c => c.trim().startsWith('demo=1'))
+
+      if (isDemoMode) {
+        console.log('🎭 UserManagement: Creating user in demo mode')
+
+        const response = await fetch('/api/admin/users/invite', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            fullName: formData.full_name,
+            role: formData.role,
+            documentId: formData.document_id,
+            phone: formData.phone
+          })
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          console.log('🎭 UserManagement: User created in demo mode:', result)
+
+          toast({
+            title: "Usuario creado",
+            description: "El usuario ha sido creado exitosamente en modo demo."
+          })
+
+          setInvitedUserEmail(formData.email)
+          setShowSuccessMessage(true)
+          setIsCreateModalOpen(false)
+          setFormData({
+            email: '',
+            password: '',
+            full_name: '',
+            document_id: '',
+            phone: '',
+            role: 'campo'
+          })
+          loadUsers()
+          checkUserLimits()
+        } else {
+          const error = await response.json()
+          toast({
+            title: "Error",
+            description: error.error || "Error al crear el usuario en modo demo",
+            variant: "destructive"
+          })
+        }
+
+        setSubmitting(false)
+        return
+      }
+
+      // Normal mode - require authentication
       const { supabase } = await import('../../lib/supabaseClient')
       const { data: { session } } = await supabase.auth.getSession()
       
@@ -659,3 +749,4 @@ export function UserManagement({ currentUser }: UserManagementProps) {
     </div>
   )
 }
+

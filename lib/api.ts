@@ -51,6 +51,7 @@ export const egresoFrutaApi = {
         .single();
       
       if (!tenantCheck) {
+        console.error(`Tenant ${egreso.tenantId} not found. Cannot create egreso.`);
         throw new Error(`Tenant ${egreso.tenantId} not found. Cannot create egreso.`);
       }
 
@@ -61,6 +62,7 @@ export const egresoFrutaApi = {
         .single();
       
       if (error) {
+        console.error('Error al crear egreso:', error.message);
         throw new Error('Error al crear egreso: ' + error.message);
       }
       return data;
@@ -359,12 +361,12 @@ export const campoApi = {
 
   async createTarea(tarea: Omit<TareaCampo, "id" | "fechaCreacion">): Promise<TareaCampo> {
     try {
-      const newTarea: TareaCampo = {
+      const newTarea = {
         ...tarea,
         id: `tc${Date.now()}`,
         fechaCreacion: new Date().toISOString().split("T")[0],
-      }
-      
+      } as TareaCampo;
+
       const { data, error } = await supabase
         .from('tareas_campo')
         .insert(newTarea)
@@ -382,11 +384,11 @@ export const campoApi = {
     } catch (error) {
       console.error('Error connecting to Supabase:', error);
       // Fallback to mock data
-      const newTarea: TareaCampo = {
+      const newTarea = {
         ...tarea,
         id: `tc${Date.now()}`,
         fechaCreacion: new Date().toISOString().split("T")[0],
-      }
+      } as TareaCampo;
       await delay(800);
       tareasCampo.push(newTarea);
       return newTarea;
@@ -406,8 +408,11 @@ export const campoApi = {
         // Fallback to mock data
         await delay(600);
         const index = tareasCampo.findIndex((t) => t.id === id);
-        if (index === -1) throw new Error("Tarea no encontrada");
-        
+        if (index === -1) {
+          console.error("Tarea no encontrada");
+          throw new Error("Tarea no encontrada");
+        }
+
         tareasCampo[index] = { ...tareasCampo[index], ...updates };
         return tareasCampo[index];
       }
@@ -418,8 +423,11 @@ export const campoApi = {
       // Fallback to mock data
       await delay(600);
       const index = tareasCampo.findIndex((t) => t.id === id);
-      if (index === -1) throw new Error("Tarea no encontrada");
-      
+      if (index === -1) {
+        console.error("Tarea no encontrada");
+        throw new Error("Tarea no encontrada");
+      }
+
       tareasCampo[index] = { ...tareasCampo[index], ...updates };
       return tareasCampo[index];
     }
@@ -437,8 +445,11 @@ export const campoApi = {
         // Fallback to mock data
         await delay(400);
         const index = tareasCampo.findIndex((t) => t.id === id);
-        if (index === -1) throw new Error("Tarea no encontrada");
-        
+        if (index === -1) {
+          console.error("Tarea no encontrada");
+          throw new Error("Tarea no encontrada");
+        }
+
         tareasCampo.splice(index, 1);
       }
     } catch (error) {
@@ -446,8 +457,11 @@ export const campoApi = {
       // Fallback to mock data
       await delay(400);
       const index = tareasCampo.findIndex((t) => t.id === id);
-      if (index === -1) throw new Error("Tarea no encontrada");
-      
+      if (index === -1) {
+        console.error("Tarea no encontrada");
+        throw new Error("Tarea no encontrada");
+      }
+
       tareasCampo.splice(index, 1);
     }
   },
@@ -484,8 +498,9 @@ export const inventarioApi = {
     const index = inventario.findIndex((i) => i.id === id)
     if (index === -1) throw new Error("Item no encontrado")
 
-    inventario[index].stock = newStock
-    return inventario[index]
+    const updatedItem = { ...inventario[index], stock: newStock }
+    inventario[index] = updatedItem
+    return updatedItem
   },
 }
 
@@ -594,27 +609,29 @@ export const preprocesoApi = {
   async getPreprocesos(tenantId: string): Promise<Preproceso[]> {
     await delay(500)
     // TODO: Implement actual Supabase integration
+    console.log('Getting preprocesos for tenant:', tenantId)
     return []
   },
 
   async createPreproceso(preproceso: Omit<Preproceso, "id">): Promise<Preproceso> {
     await delay(800)
-    const newPreproceso: Preproceso = {
+    return {
       ...preproceso,
       id: `pp${Date.now()}`,
     }
-    return newPreproceso
   },
 
   async updatePreproceso(id: string, updates: Partial<Preproceso>): Promise<Preproceso> {
     await delay(600)
     // TODO: Implement actual update logic
+    console.log('Updating preproceso:', id, updates)
     throw new Error("Preproceso no encontrado")
   },
 
   async deletePreproceso(id: string): Promise<void> {
     await delay(400)
     // TODO: Implement actual delete logic
+    console.log('Deleting preproceso:', id)
   },
 }
 
@@ -623,27 +640,29 @@ export const palletsApi = {
   async getPallets(tenantId: string): Promise<Pallet[]> {
     await delay(500)
     // TODO: Implement actual Supabase integration
+    console.log('Getting pallets for tenant:', tenantId)
     return []
   },
 
   async createPallet(pallet: Omit<Pallet, "id">): Promise<Pallet> {
     await delay(800)
-    const newPallet: Pallet = {
+    return {
       ...pallet,
       id: `plt${Date.now()}`,
     }
-    return newPallet
   },
 
   async updatePallet(id: string, updates: Partial<Pallet>): Promise<Pallet> {
     await delay(600)
     // TODO: Implement actual update logic
+    console.log('Updating pallet:', id, updates)
     throw new Error("Pallet no encontrado")
   },
 
   async deletePallet(id: string): Promise<void> {
     await delay(400)
     // TODO: Implement actual delete logic
+    console.log('Deleting pallet:', id)
   },
 }
 
@@ -652,27 +671,29 @@ export const despachoApi = {
   async getDespachos(tenantId: string): Promise<Despacho[]> {
     await delay(500)
     // TODO: Implement actual Supabase integration
+    console.log('Getting despachos for tenant:', tenantId)
     return []
   },
 
   async createDespacho(despacho: Omit<Despacho, "id">): Promise<Despacho> {
     await delay(800)
-    const newDespacho: Despacho = {
+    return {
       ...despacho,
       id: `dsp${Date.now()}`,
     }
-    return newDespacho
   },
 
   async updateDespacho(id: string, updates: Partial<Despacho>): Promise<Despacho> {
     await delay(600)
     // TODO: Implement actual update logic
+    console.log('Updating despacho:', id, updates)
     throw new Error("Despacho no encontrado")
   },
 
   async deleteDespacho(id: string): Promise<void> {
     await delay(400)
     // TODO: Implement actual delete logic
+    console.log('Deleting despacho:', id)
   },
 }
 
@@ -1108,6 +1129,20 @@ export const attendanceApi = {
 // Tasks API
 export const tasksApi = {
   async getTasksByLot(lotId: string): Promise<import('./types').Task[]> {
+    // Check for demo mode
+    const isDemo = typeof document !== 'undefined' &&
+      document.cookie.split(';').some(c => c.trim().startsWith('demo=1'));
+
+    if (isDemo) {
+      console.log('🎭 DEMO MODE: Getting tasks for lot:', lotId);
+      const { demoData } = await import('./mocks');
+
+      // Filter tasks by lot_id from demo data
+      const demoTasks = (demoData.tasks || []).filter((t: any) => t.lot_id === lotId);
+      console.log('🎭 DEMO MODE: Found tasks:', demoTasks.length);
+      return demoTasks;
+    }
+
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
@@ -1119,6 +1154,17 @@ export const tasksApi = {
   },
 
   async getTaskById(taskId: string): Promise<import('./types').Task | null> {
+    // Check for demo mode
+    const isDemo = typeof document !== 'undefined' &&
+      document.cookie.split(';').some(c => c.trim().startsWith('demo=1'));
+
+    if (isDemo) {
+      console.log('🎭 DEMO MODE: Getting task by id:', taskId);
+      const { demoData } = await import('./mocks');
+      const task = (demoData.tasks || []).find((t: any) => t.id === taskId);
+      return task || null;
+    }
+
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
@@ -1132,6 +1178,44 @@ export const tasksApi = {
   async createTask(tenantId: string, taskData: import('./types').CreateTaskData, userId?: string): Promise<import('./types').Task> {
     console.log('🔍 Creating task with data:', { tenantId, taskData, userId });
     
+    // Check for demo mode
+    const isDemo = typeof document !== 'undefined' &&
+      document.cookie.split(';').some(c => c.trim().startsWith('demo=1'));
+
+    if (isDemo) {
+      console.log('🎭 DEMO MODE: Creating task in demo data');
+      const { demoData } = await import('./mocks');
+
+      // Generate a unique ID for the task
+      const newTask = {
+        id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        tenant_id: tenantId,
+        farm_id: taskData.farm_id,
+        lot_id: taskData.lot_id,
+        title: taskData.title,
+        description: taskData.description || '',
+        type_code: taskData.type_code || 'otro',
+        status_code: taskData.status_code || 'pendiente',
+        scheduled_date: taskData.scheduled_date || null,
+        responsible_membership_id: taskData.responsible_membership_id || null,
+        worker_id: taskData.worker_id || null,
+        created_by: userId || tenantId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Initialize tasks array if it doesn't exist
+      if (!demoData.tasks) {
+        demoData.tasks = [];
+      }
+
+      // Add the new task to demo data
+      demoData.tasks.push(newTask);
+
+      console.log('✅ DEMO MODE: Task created successfully:', newTask);
+      return newTask;
+    }
+
     const { data, error } = await supabase
       .from('tasks')
       .insert({
@@ -1160,6 +1244,36 @@ export const tasksApi = {
   },
 
   async updateTask(taskId: string, taskData: Partial<import('./types').CreateTaskData>): Promise<import('./types').Task> {
+    // Check for demo mode
+    const isDemo = typeof document !== 'undefined' &&
+      document.cookie.split(';').some(c => c.trim().startsWith('demo=1'));
+
+    if (isDemo) {
+      console.log('🎭 DEMO MODE: Updating task:', taskId);
+      const { demoData } = await import('./mocks');
+
+      // Initialize tasks array if it doesn't exist
+      if (!demoData.tasks) {
+        demoData.tasks = [];
+      }
+
+      const taskIndex = demoData.tasks.findIndex((t: any) => t.id === taskId);
+
+      if (taskIndex === -1) {
+        throw new Error('Task not found');
+      }
+
+      // Update the task
+      demoData.tasks[taskIndex] = {
+        ...demoData.tasks[taskIndex],
+        ...taskData,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('✅ DEMO MODE: Task updated successfully:', demoData.tasks[taskIndex]);
+      return demoData.tasks[taskIndex];
+    }
+
     const { data, error } = await supabase
       .from('tasks')
       .update(taskData)
@@ -1172,6 +1286,28 @@ export const tasksApi = {
   },
 
   async deleteTask(taskId: string): Promise<void> {
+    // Check for demo mode
+    const isDemo = typeof document !== 'undefined' &&
+      document.cookie.split(';').some(c => c.trim().startsWith('demo=1'));
+
+    if (isDemo) {
+      console.log('🎭 DEMO MODE: Deleting task:', taskId);
+      const { demoData } = await import('./mocks');
+
+      // Initialize tasks array if it doesn't exist
+      if (!demoData.tasks) {
+        demoData.tasks = [];
+      }
+
+      const taskIndex = demoData.tasks.findIndex((t: any) => t.id === taskId);
+
+      if (taskIndex !== -1) {
+        demoData.tasks.splice(taskIndex, 1);
+        console.log('✅ DEMO MODE: Task deleted successfully');
+      }
+      return;
+    }
+
     const { error } = await supabase
       .from('tasks')
       .delete()
@@ -1200,4 +1336,3 @@ export const tasksApi = {
     return data || []
   }
 }
-

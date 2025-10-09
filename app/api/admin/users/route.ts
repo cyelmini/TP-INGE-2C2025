@@ -4,6 +4,12 @@ import { NextRequest, NextResponse } from 'next/server';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Check if in demo mode
+function isDemoMode(request: NextRequest): boolean {
+  const cookies = request.cookies.get('demo');
+  return cookies?.value === '1';
+}
+
 if (!supabaseUrl || !supabaseServiceKey) {
 }
 
@@ -18,6 +24,54 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
 
 export async function GET(request: NextRequest) {
   try {
+    // Handle demo mode
+    if (isDemoMode(request)) {
+      console.log('🎭 DEMO MODE: Fetching users from demo data');
+
+      const { demoData } = await import('../../../../lib/mocks');
+
+      // Get all workers from demoData
+      const workers = demoData.workers || [];
+
+      console.log('🎭 DEMO MODE: Total workers in demoData:', workers.length);
+
+      // Transform workers data to match expected format
+      const demoUsers = workers.map((worker: any) => {
+        const membership = demoData.tenant_memberships?.find(
+          (m: any) => m.id === worker.membership_id
+        );
+
+        return {
+          id: worker.id,
+          email: worker.email,
+          full_name: worker.full_name,
+          document_id: worker.document_id,
+          phone: worker.phone,
+          area_module: worker.area_module,
+          status: worker.status,
+          created_at: worker.created_at,
+          membership: membership ? {
+            id: membership.id,
+            role_code: membership.role_code,
+            status: membership.status,
+            user_id: membership.user_id,
+            accepted_at: membership.accepted_at
+          } : null
+        };
+      });
+
+      console.log('🎭 DEMO MODE: Returning users:', demoUsers.length);
+
+      return NextResponse.json({
+        users: demoUsers,
+        tenant: {
+          id: 'demo-tenant',
+          name: 'Empresa Demo',
+          plan: 'premium'
+        }
+      });
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json(
         { error: 'Supabase configuration missing. Please check environment variables.' },

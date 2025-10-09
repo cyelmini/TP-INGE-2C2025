@@ -81,6 +81,10 @@ class DemoQueryBuilder {
         return [...demoData.workers]
       case 'lots':
         return [...demoData.lots]
+      case 'users':
+        return [...demoData.users]
+      case 'tenant_memberships':
+        return [...demoData.tenant_memberships]
       case 'pallets':
         return [...demoData.empaque.pallets]
       case 'ingreso_fruta':
@@ -272,4 +276,3 @@ export function getSupabaseClient(normalClient: any) {
   }
   return normalClient
 }
-

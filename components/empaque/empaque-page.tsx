@@ -440,16 +440,23 @@ export function EmpaqueFlow(props: {
         // Pallets en cada etapa
         const palletsCount = pallets.length;
 
-        // Pallets desde despachos (preferido) y fallback por estado en pallets
-        const totalPalletsFromDespachos = despachos.reduce((s, d: any) => s + (Number(d.total_pallets || 0) || 0), 0);
+        // Pallets despachados: contar directamente desde la tabla despacho
+        const palletsDespachadosFromDespachos = despachos.reduce((count, d: any) => {
+            const palletsArray = d.pallets || [];
+            return count + (Array.isArray(palletsArray) ? palletsArray.length : 0);
+        }, 0);
+
+        // Fallback: contar pallets con estado despachado
         const palletsDespachadosFallback = pallets.filter((p: any) => p.estado === "despachado").length;
-        const palletsDespacho = totalPalletsFromDespachos || palletsDespachadosFallback || 0;
+        const palletsDespacho = palletsDespachadosFromDespachos || palletsDespachadosFallback || 0;
 
-        // Pallets egresados: si existen por estado, usamos ese número; si no, igual a despachados
+        // Pallets egresados: contar desde egreso_fruta (cada egreso tiene pallet_id, no array)
+        const palletsEgresadosFromEgreso = egresosFruta.filter((e: any) => e.pallet_id != null).length;
+
         const palletsEgresadosState = pallets.filter((p: any) => p.estado === "egresado").length || 0;
-        const palletsEgresado = palletsEgresadosState > 0 ? palletsEgresadosState : palletsDespacho;
+        const palletsEgresado = palletsEgresadosFromEgreso || palletsEgresadosState || 0;
 
-        const totalCajasFromDespachos = despachos.reduce((s, d: any) => s + (Number(d.total_cajas || 0) || 0), 0);
+        const totalCajasFromDespachos = despachos.reduce((s, d) => s + (Number(d.total_cajas || 0) || 0), 0);
 
         return {
             binsIngresados,
@@ -458,7 +465,7 @@ export function EmpaqueFlow(props: {
             palletsCount,
             palletsDespacho,
             palletsEgresado,
-            totalPalletsFromDespachos,
+            palletsDespachadosFromDespachos,
             totalCajasFromDespachos,
         };
     }, [ingresosFruta, preprocesos, pallets, despachos, egresosFruta]);
@@ -467,9 +474,9 @@ export function EmpaqueFlow(props: {
 
     const flags = useMemo(() => {
         const f: Record<string, string | null> = { ingreso: null, preproceso: null, pallets: null, despacho: null, egreso: null };
-        if (sums.binsIngresados > 0 && sums.binsPreproceso < Math.floor(sums.binsIngresados * 0.9)) f.preproceso = "En cola";
+        if (sums.binsIngresados > 0 && sums.binVolcados < Math.floor(sums.binsIngresados * 0.9)) f.preproceso = "En cola";
         if (sums.palletsDespacho + 1 < sums.palletsCount) f.despacho = "Pendiente";
-        if (sums.palletsEgresado + 1 < sums.palletsDespacho) f.egreso = "Pendiente";
+        if (sums.palletsEgresado < sums.palletsDespacho) f.egreso = "Pendiente";
         return f;
     }, [sums]);
 
@@ -481,6 +488,8 @@ export function EmpaqueFlow(props: {
 
     const steps = useMemo(() => {
         const baseline = Math.max(1, sums.palletsCount);
+        const binsBaseline = Math.max(1, sums.binsIngresados);
+
         return [
             {
                 key: "ingreso",
@@ -488,7 +497,7 @@ export function EmpaqueFlow(props: {
                 icon: ArrowDown,
                 mainKg: null, // usamos pallets como unidad principal; ingreso no tiene pallets
                 altUnits: sums.binsIngresados, // mostramos bins
-                pctAgainstIngreso: 0,
+                pctAgainstIngreso: 100, // Ingreso es la base (100%)
                 flag: null,
             },
             {
@@ -496,9 +505,9 @@ export function EmpaqueFlow(props: {
                 title: "Preproceso",
                 icon: Cog,
                 mainKg: null,
-                altUnits: sums.binsPreproceso,
+                altUnits: sums.binVolcados,
                 binVolcados: sums.binVolcados,
-                pctAgainstIngreso: 0,
+                pctAgainstIngreso: pct(sums.binVolcados, binsBaseline), // Porcentaje de bins volcados vs bins ingresados
                 flag: flags.preproceso,
             },
             {
