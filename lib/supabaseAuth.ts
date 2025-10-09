@@ -27,7 +27,6 @@ export interface AcceptInvitationParams {
     fullName: string
     phone?: string
     password: string
-    documentId?: string
   }
 }
 
@@ -623,8 +622,7 @@ export const authService = {
 
   getInvitationByToken: async (token: string): Promise<{ success: boolean; error?: string; data?: any }> => {
     try {
-      // Primero buscar la invitación específica (incluso si está revocada)
-      const { data: currentInvitation, error: currentError } = await supabase
+      const { data: invitation, error } = await supabase
         .from('invitations')
         .select(`
           *,
@@ -632,51 +630,26 @@ export const authService = {
           roles(name)
         `)
         .eq('token_hash', token)
+        .is('accepted_at', null)
+        .is('revoked_at', null)
         .single()
 
-      if (currentError && currentError.code !== 'PGRST116') {
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { success: false, error: 'Invitación no encontrada o ya fue utilizada' }
+        }
         return { success: false, error: 'Error al buscar invitación' }
       }
 
-      if (!currentInvitation) {
+      if (!invitation) {
         return { success: false, error: 'Invitación no encontrada' }
       }
 
-      // Si la invitación fue revocada, verificar si hay una más nueva
-      if (currentInvitation.revoked_at) {
-        const { data: newerInvitation } = await supabase
-          .from('invitations')
-          .select('id, created_at')
-          .eq('email', currentInvitation.email)
-          .eq('tenant_id', currentInvitation.tenant_id)
-          .eq('role_code', currentInvitation.role_code)
-          .is('accepted_at', null)
-          .is('revoked_at', null)
-          .gt('created_at', currentInvitation.created_at)
-          .maybeSingle()
-
-        if (newerInvitation) {
-          return { 
-            success: false, 
-            error: 'Esta invitación ha sido reemplazada por una más reciente. Por favor, revisa tu email para obtener el enlace más reciente.',
-            data: { errorType: 'NEWER_INVITATION_EXISTS' }
-          }
-        }
-        
-        return { success: false, error: 'Esta invitación ha sido revocada' }
-      }
-
-      // Si ya fue aceptada
-      if (currentInvitation.accepted_at) {
-        return { success: false, error: 'Esta invitación ya fue utilizada' }
-      }
-
-      // Verificar expiración
-      if (new Date() > new Date(currentInvitation.expires_at)) {
+      if (new Date() > new Date(invitation.expires_at)) {
         return { success: false, error: 'La invitación ha expirado' }
       }
 
-      return { success: true, data: currentInvitation }
+      return { success: true, data: invitation }
 
     } catch (error: any) {
       return { success: false, error: error.message || 'Error inesperado' }
@@ -775,27 +748,6 @@ export const authService = {
           accepted_at: new Date().toISOString()
         })
         .eq('id', invitation.id)
-
-      // Si es un admin, también crear registro en workers
-      if (invitation.role_code === 'admin' && params.userData) {
-        const { error: workerError } = await supabase
-          .from('workers')
-          .insert([{
-            tenant_id: invitation.tenant_id,
-            full_name: params.userData.fullName,
-            document_id: params.userData.documentId || 'N/A', // Default si no se proporciona
-            email: session.user.email,
-            phone: params.userData.phone || null,
-            area_module: 'admin', // Los admins tienen acceso a todo
-            membership_id: membershipData.id,
-            status: 'active'
-          }])
-
-        if (workerError) {
-          console.error('Error creating worker record for admin:', workerError)
-          // No devolver error, ya que el admin fue creado exitosamente
-        }
-      }
 
       await supabase
         .from('audit_logs')

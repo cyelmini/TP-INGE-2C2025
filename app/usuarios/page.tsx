@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { Sidebar } from "../../components/sidebar"
-import { UserManagement } from "../../components/admin/user-management"
+import { EnProcesoPage } from "../../components/ui/en-proceso-page"
 import { useAuth } from "../../hooks/use-auth"
 import { FeatureProvider } from "../../lib/features-context"
 
@@ -13,9 +13,7 @@ export default function UsuariosRoutePage() {
   });
   const router = useRouter();
 
-  // Debug logging
-  console.log('🔍 UsuariosPage: user:', user);
-  console.log('🔍 UsuariosPage: user.rol:', user?.rol);
+
 
   if (loading) {
     return (
@@ -40,27 +38,28 @@ export default function UsuariosRoutePage() {
           user={user} 
           onLogout={handleLogout}
           onNavigate={(page) => {
-            // Solo navegar si no es la página actual
-            if (page !== "usuarios") {
-              const pageRoutes: Record<string, string> = {
-                dashboard: "/home",
-                campo: "/campo",
-                empaque: "/empaque",
-                inventario: "/inventario",
-                finanzas: "/finanzas",
-                ajustes: "/ajustes",
-                trabajadores: "/trabajadores",
-                contactos: "/contactos",
-              };
+            const pageRoutes: Record<string, string> = {
+              dashboard: "/home",
+              campo: "/campo",
+              empaque: "/empaque",
+              inventario: "/inventario",
+              finanzas: "/finanzas",
+              ajustes: "/ajustes",
+              trabajadores: "/trabajadores",
+              contactos: "/contactos",
+              usuarios: "/usuarios"
+            };
 
-              const targetRoute = pageRoutes[page] || "/home";
-              router.push(targetRoute);
-            }
+            const targetRoute = pageRoutes[page] || "/home";
+            router.push(targetRoute);
           }}
           currentPage="usuarios"
         />
         <div className="flex-1 flex flex-col">
-          <UserManagement currentUser={user} />
+          <EnProcesoPage 
+            moduleName="Gestión de Usuarios" 
+            description="Este módulo permitirá gestionar usuarios, roles y permisos del sistema. Estamos trabajando en mejorar la experiencia de administración."
+          />
         </div>
       </div>
     </FeatureProvider>
