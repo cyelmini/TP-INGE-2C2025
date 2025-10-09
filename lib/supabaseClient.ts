@@ -1,4 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseClient, demoSupabase } from './demo-supabase-mock';
+
+// Check if in demo mode
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return document.cookie.split(';').some(c => c.trim().startsWith('demo=1'));
+}
 
 // Environment variables (optional for mock mode)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
@@ -12,16 +19,15 @@ declare global {
   var __seedor_supabase_client__: SupabaseClient | undefined;
 }
 
-// Create real client only if env vars are present. Otherwise, provide a mock client
-// that throws on use so callers can catch and fall back to local mocks.
-let supabase: any;
+// Create real client only if env vars are present
+let realSupabase: any;
 
 if (supabaseUrl && supabaseAnonKey) {
   // Use global singleton (works across module re-evaluations)
   if (typeof globalThis !== 'undefined' && globalThis[GLOBAL_KEY]) {
-    supabase = globalThis[GLOBAL_KEY];
+    realSupabase = globalThis[GLOBAL_KEY];
   } else {
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    realSupabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -32,7 +38,7 @@ if (supabaseUrl && supabaseAnonKey) {
     
     // Store in globalThis to prevent multiple instances (works in both browser and Node.js)
     if (typeof globalThis !== 'undefined') {
-      globalThis[GLOBAL_KEY] = supabase;
+      globalThis[GLOBAL_KEY] = realSupabase;
     }
   }
 } else {
@@ -49,16 +55,33 @@ if (supabaseUrl && supabaseAnonKey) {
     insert() { return rejectPromise(); },
     update() { return rejectPromise(); },
     delete() { return rejectPromise(); },
-    eq() { return rejectPromise(); },
   } as any;
-  supabase = {
+  realSupabase = {
     from() { return tableBuilder; },
     auth: {
-      onAuthStateChange() { return { data: { subscription: { unsubscribe: () => {} } } }; },
-      getSession() { return rejectPromise(); },
-      signOut() { return rejectPromise(); },
+      getSession: rejectPromise,
+      getUser: rejectPromise,
+      signUp: rejectPromise,
+      signInWithPassword: rejectPromise,
+      signOut: rejectPromise,
     }
-  } as any;
+  };
 }
 
-export { supabase };
+// Export a proxy that checks demo mode
+export const supabase = new Proxy(realSupabase, {
+  get(target, prop) {
+    // In demo mode, use demo client
+    if (isDemoMode() && prop === 'from') {
+      return demoSupabase.from.bind(demoSupabase);
+    }
+    if (isDemoMode() && prop === 'auth') {
+      return demoSupabase.auth;
+    }
+
+    // Otherwise use real client
+    return target[prop];
+  }
+});
+
+export default supabase;

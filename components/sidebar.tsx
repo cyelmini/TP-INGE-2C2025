@@ -7,6 +7,7 @@ import { Button } from "./ui/button"
 import { cn } from "../lib/utils"
 import type { AuthUser } from "../lib/types"
 import { useFeatures, ModuleGate } from "../lib/features-context"
+import { ExitDemoButton } from "./ExitDemoButton"
 import {
   LayoutDashboard,
   Sprout,
@@ -99,7 +100,7 @@ const navItems: NavItem[] = [
 
 export function Sidebar({ user, onLogout, onNavigate, currentPage }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const { canAccessModule, planInfo } = useFeatures()
+  const { canAccessModule, planInfo, isDemo } = useFeatures()
 
   const filteredNavItems = navItems.filter((item) => {
     if (!canAccessModule(item.module, user.rol)) {
@@ -177,7 +178,10 @@ export function Sidebar({ user, onLogout, onNavigate, currentPage }: SidebarProp
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-2">
+        {isDemo && !isCollapsed && (
+          <ExitDemoButton />
+        )}
         <Button
           variant="ghost"
           className={cn("w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent", isCollapsed && "px-2")}

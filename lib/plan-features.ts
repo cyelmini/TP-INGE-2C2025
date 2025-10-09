@@ -133,3 +133,57 @@ export function getRecommendedUpgrade(currentPlanId: string): PlanFeatureConfig 
   const upgrades = getUpgradePlans(currentPlanId)
   return upgrades.length > 0 ? upgrades[0] : null
 }
+
+// Get plan features for demo mode and feature checking
+export function getPlanFeatures(planId: string) {
+  const config = getPlanConfig(planId)
+
+  if (!config) {
+    // Default to basic if plan not found
+    return getPlanConfig('basic')?.includedFeatures || []
+  }
+
+  return config.includedFeatures
+}
+
+// Get full professional plan config for demo mode
+export function getProfessionalPlanConfig() {
+  return getPlanConfig('pro') || {
+    planId: 'professional',
+    planName: 'Profesional',
+    price: 79.99,
+    maxUsers: -1, // Unlimited for demo
+    maxFields: -1, // Unlimited for demo
+    includedFeatures: [
+      'dashboard',
+      'campo',
+      'trabajadores',
+      'inventario',
+      'empaque',
+      'finanzas',
+      'contactos',
+      'ajustes',
+      'user_management',
+      'tareas_campo',
+      'calendario_campo',
+      'seguimiento_tareas',
+      'rendimiento_lotes',
+      'registro_procesada',
+      'clasificacion_mercado',
+      'control_lotes_emp',
+      'control_pallets',
+      'registro_insumos',
+      'ajustes_stock',
+      'alertas_stock',
+      'ingresos_egresos',
+      'caja_chica',
+      'reportes_financieros',
+      'contactos_crm',
+      'creacion_trab',
+      'rol_trabajador',
+      'trabajadores_advanced',
+      'stats_asistencia',
+      'export_excel'
+    ]
+  }
+}

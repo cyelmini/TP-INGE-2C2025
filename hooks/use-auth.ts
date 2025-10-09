@@ -12,6 +12,30 @@ declare global {
   }
 }
 
+// Check if in demo mode
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false
+  return document.cookie.split(';').some(c => c.trim().startsWith('demo=1'))
+}
+
+// Create demo user
+function getDemoUser() {
+  return {
+    id: 'demo-user-id',
+    email: 'demo@seedor.com',
+    nombre: 'Usuario Demo',
+    apellido: 'Seedor',
+    rol: 'Admin',
+    tenantId: 'demo-tenant',
+    tenant_id: 'demo-tenant',
+    tenant: {
+      id: 'demo-tenant',
+      name: 'Demo Empresa',
+      plan: 'professional',
+      slug: 'demo'
+    }
+  }
+}
 
 export function useAuth(options: {
   redirectToLogin?: boolean; 
@@ -29,10 +53,26 @@ export function useAuth(options: {
   
   const [authChecking, setAuthChecking] = useState(true);
   
+  // Check for demo mode first
+  useEffect(() => {
+    if (isDemoMode()) {
+      setActiveUser(getDemoUser())
+      setAuthChecking(false)
+      return
+    }
+  }, [])
+
   const checkAndGetSession = async () => {
     if (sessionCheckAttempted.current) return;
     sessionCheckAttempted.current = true;
     
+    // If in demo mode, use demo user
+    if (isDemoMode()) {
+      setActiveUser(getDemoUser())
+      setAuthChecking(false)
+      return
+    }
+
     try {
       const sessionManager = getSessionManager();
       
@@ -40,7 +80,6 @@ export function useAuth(options: {
       let tabUser = sessionManager.getCurrentUser();
       
       if (tabUser) {
-
         setActiveUser(tabUser);
         setAuthChecking(false);
         return;
@@ -75,6 +114,13 @@ export function useAuth(options: {
   };
 
   useEffect(() => {
+    // Demo mode bypass
+    if (isDemoMode()) {
+      setActiveUser(getDemoUser())
+      setAuthChecking(false)
+      return
+    }
+
     if (isSubpageUsingLayout.current) {
       setAuthChecking(false);
       return;
@@ -128,7 +174,7 @@ export function useAuth(options: {
   useEffect(() => {
     if (useLayoutSession && !empaqueUser && !getParentUser() && typeof window !== 'undefined') {
       let attempts = 0;
-      const maxAttempts = 15; // Increase max attempts
+      const maxAttempts = 15;
       const checkInterval = setInterval(() => {
         attempts++;
         
@@ -166,11 +212,8 @@ export function useAuth(options: {
   const parentUser = useLayoutSession ? (empaqueUser || getParentUser()) : null;
   const sessionManager = getSessionManager();
   
-  // Usar peek para evitar efectos secundarios durante logout
   const tabUser = activeUser ? null : sessionManager.peekCurrentUser();
   
-  // Prioridad: parentUser (empaque) > activeUser (estado local) > tabUser (sessionManager) > contextUser (global)
-  // Si activeUser es null explícitamente (logout), solo usar parentUser
   const currentUser = parentUser || (activeUser === null ? null : (activeUser || tabUser || contextUser));
   
   const hasRequiredRole = isSubpageUsingLayout.current ? true : (
@@ -231,8 +274,13 @@ export function useAuth(options: {
   }
 
   const handleLogout = async () => {
+    // If in demo mode, just clear cookie and redirect
+    if (isDemoMode()) {
+      document.cookie = 'demo=; path=/; max-age=0'
+      router.push('/')
+      return
+    }
 
-    
     try {
       // Primero limpiar todos los estados locales inmediatamente
       setActiveUser(null);
@@ -261,8 +309,7 @@ export function useAuth(options: {
   return {
     user: currentUser,
     loading: authChecking || contextLoading,
-    loggedIn: !!currentUser,
     hasRequiredRole,
-    handleLogout
+    handleLogout,
   };
 }

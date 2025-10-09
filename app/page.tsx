@@ -108,6 +108,12 @@ export default function LandingPage() {
                                         <ArrowRight className="ml-2 h-5 w-5" />
                                     </Button>
                                 </Link>
+                                <Link href="/demo">
+                                    <Button size="lg" variant="default" className="cursor-pointer px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style={{ backgroundColor: '#73AC01', color: 'white', fontFamily: 'Circular Std, sans-serif' }}>
+                                        Ver demo
+                                        <ArrowRight className="ml-2 h-5 w-5" />
+                                    </Button>
+                                </Link>
                                 <Link href="/login">
                                     <Button size="lg" variant="outline" className="cursor-pointer px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:scale-105" style={{ borderColor: '#73AC01', color: '#73AC01', fontFamily: 'Circular Std, sans-serif' }}>
                                         Iniciar sesión
@@ -247,9 +253,10 @@ export default function LandingPage() {
                                         <ArrowRight className="ml-3 h-6 w-6" />
                                     </Button>
                                 </Link>
-                                <Link href="/login">
-                                    <Button size="lg" variant="outline" className="cursor-pointer border-white/30 text-white hover:bg-white/10 px-10 py-4 text-xl font-semibold rounded-xl transition-all duration-300 hover:scale-105" style={{ fontFamily: 'Circular Std, sans-serif' }}>
+                                <Link href="/demo">
+                                    <Button size="lg" className="cursor-pointer bg-white hover:bg-gray-50 px-10 py-4 text-xl font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" style={{ color: '#73AC01', fontFamily: 'Circular Std, sans-serif' }}>
                                         Ver demo
+                                        <ArrowRight className="ml-3 h-6 w-6" />
                                     </Button>
                                 </Link>
                             </div>

@@ -4,6 +4,9 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Check for demo mode
+  const demoMode = request.cookies.get('demo')?.value === '1'
+
   // Lista de rutas públicas que no requieren autenticación
   const publicRoutes = [
     '/',
@@ -19,13 +22,19 @@ export function middleware(request: NextRequest) {
     '/funcionalidades',
     '/api',
     '/_next',
-    '/favicon.ico'
+    '/favicon.ico',
+    '/demo'
   ]
 
   // Verificar si la ruta es pública
   const isPublicRoute = publicRoutes.some(route => 
     pathname.startsWith(route)
   )
+
+  // Si estamos en modo demo, permitir acceso a todas las rutas protegidas
+  if (demoMode && !isPublicRoute) {
+    return NextResponse.next()
+  }
 
   // Si es una ruta pública, permitir acceso
   if (isPublicRoute) {

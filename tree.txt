@@ -1,0 +1,278 @@
+.
+├── app
+│   ├── accept-invitacion
+│   │   └── page.tsx
+│   ├── admin-setup
+│   │   └── page.tsx
+│   ├── ajustes
+│   │   └── page.tsx
+│   ├── api
+│   │   ├── admin
+│   │   │   ├── create-worker
+│   │   │   │   └── route.ts
+│   │   │   ├── enable-modules
+│   │   │   │   └── route.ts
+│   │   │   └── users
+│   │   │       ├── invite
+│   │   │       │   └── route.ts
+│   │   │       ├── route-new.ts
+│   │   │       ├── route.backup.old.txt
+│   │   │       └── route.ts
+│   │   ├── auth
+│   │   │   ├── forgot-password
+│   │   │   │   └── route.ts
+│   │   │   ├── invite-admin
+│   │   │   │   └── route.ts
+│   │   │   ├── invite-module-user
+│   │   │   │   └── route.ts
+│   │   │   ├── login
+│   │   │   │   └── route.ts
+│   │   │   ├── logout
+│   │   │   │   └── route.ts
+│   │   │   ├── me
+│   │   │   │   └── route.ts
+│   │   │   └── reset-password
+│   │   │       └── route.ts
+│   │   ├── debug
+│   │   │   └── invitation-status
+│   │   │       └── route.ts
+│   │   ├── tenant
+│   │   │   ├── [tenantId]
+│   │   │   │   └── limits
+│   │   │   │       └── route.ts
+│   │   │   └── create
+│   │   │       └── route.ts
+│   │   ├── tenants
+│   │   │   └── [tenantId]
+│   │   │       └── limits
+│   │   │           └── route.ts
+│   │   └── workers
+│   │       └── route.ts
+│   ├── auth
+│   │   └── set-password
+│   │       └── page.tsx
+│   ├── campo
+│   │   ├── [farmId]
+│   │   │   ├── [lotId]
+│   │   │   │   └── page.tsx
+│   │   │   └── page.tsx
+│   │   └── page.tsx
+│   ├── contactenos
+│   │   └── page.tsx
+│   ├── contacto
+│   │   └── page.tsx
+│   ├── contactos
+│   │   └── page.tsx
+│   ├── crear-campo
+│   │   └── page.tsx
+│   ├── empaque
+│   │   ├── despacho
+│   │   │   └── page.tsx
+│   │   ├── egreso-fruta
+│   │   │   └── page.tsx
+│   │   ├── ingreso-fruta
+│   │   │   └── page.tsx
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── pallets
+│   │   │   └── page.tsx
+│   │   └── preproceso
+│   │       └── page.tsx
+│   ├── finanzas
+│   │   └── page.tsx
+│   ├── forgot-password
+│   │   └── page.tsx
+│   ├── funcionalidades
+│   │   ├── page-enhanced.tsx
+│   │   └── page.tsx
+│   ├── globals.css
+│   ├── home
+│   │   └── page.tsx
+│   ├── inventario
+│   │   └── page.tsx
+│   ├── layout.tsx
+│   ├── login
+│   │   └── page.tsx
+│   ├── page.tsx
+│   ├── register-tenant
+│   │   └── page.tsx
+│   ├── reset-password
+│   │   └── page.tsx
+│   ├── trabajadores
+│   │   └── page.tsx
+│   ├── user-setup
+│   │   └── page.tsx
+│   └── usuarios
+│       └── page.tsx
+├── check-workers.js
+├── components
+│   ├── accept-invitation-form.tsx
+│   ├── admin
+│   │   ├── plan-management.tsx
+│   │   └── user-management.tsx
+│   ├── admin-setup-form.tsx
+│   ├── ajustes
+│   │   ├── ajustes-page.tsx
+│   │   └── enhanced-ajustes-page.tsx
+│   ├── auth
+│   │   ├── AuthErrorHandler.tsx
+│   │   ├── SessionCleanup.tsx
+│   │   ├── UserContext.tsx
+│   │   ├── forgot-password-form.tsx
+│   │   ├── reset-password-form.tsx
+│   │   └── set-password-form.tsx
+│   ├── campo
+│   │   ├── campo-en-proceso-page.tsx
+│   │   ├── create-field-form.tsx
+│   │   ├── farm-detail-page.tsx
+│   │   ├── farm-form-modal.tsx
+│   │   ├── farms-list.tsx
+│   │   ├── lot-form-modal.tsx
+│   │   ├── lot-tasks-page.tsx
+│   │   └── task-form-modal.tsx
+│   ├── contact
+│   │   └── contact-form.tsx
+│   ├── contactos
+│   │   └── contactos-page.tsx
+│   ├── dashboard-stats.tsx
+│   ├── empaque
+│   │   ├── EmpaqueAuthContext.tsx
+│   │   ├── despacho-form-modal.tsx
+│   │   ├── despacho-page.tsx
+│   │   ├── egreso-fruta-form-modal.tsx
+│   │   ├── egreso-fruta-page.tsx
+│   │   ├── empaque-form-modal.tsx
+│   │   ├── empaque-page.tsx
+│   │   ├── ingreso-fruta-form-modal.tsx
+│   │   ├── ingreso-fruta-page.tsx
+│   │   ├── pallets-form-modal.tsx
+│   │   ├── pallets-page.tsx
+│   │   ├── preproceso-form-modal.tsx
+│   │   └── preproceso-page.tsx
+│   ├── finanzas
+│   │   ├── finanzas-form-modal.tsx
+│   │   └── finanzas-page.tsx
+│   ├── header.tsx
+│   ├── inventario
+│   │   └── inventario-page.tsx
+│   ├── layout
+│   │   └── protected-layout.tsx
+│   ├── login-form.tsx
+│   ├── register-tenant-form.tsx
+│   ├── sidebar.tsx
+│   ├── subscription
+│   │   └── PlanSelector.tsx
+│   ├── theme-provider.tsx
+│   ├── trabajadores
+│   │   ├── attendance-form-modal.tsx
+│   │   ├── attendance-history.tsx
+│   │   ├── daily-attendance-old.tsx
+│   │   ├── daily-attendance.tsx
+│   │   ├── trabajadores-page.tsx
+│   │   └── worker-form-modal.tsx
+│   ├── ui
+│   │   ├── accordion.tsx
+│   │   ├── alert-dialog.tsx
+│   │   ├── alert.tsx
+│   │   ├── aspect-ratio.tsx
+│   │   ├── avatar.tsx
+│   │   ├── badge.tsx
+│   │   ├── breadcrumb.tsx
+│   │   ├── button.tsx
+│   │   ├── calendar.tsx
+│   │   ├── card.tsx
+│   │   ├── carousel.tsx
+│   │   ├── chart.tsx
+│   │   ├── checkbox.tsx
+│   │   ├── collapsible.tsx
+│   │   ├── command.tsx
+│   │   ├── context-menu.tsx
+│   │   ├── dialog.tsx
+│   │   ├── drawer.tsx
+│   │   ├── dropdown-menu.tsx
+│   │   ├── en-proceso-page.tsx
+│   │   ├── form.tsx
+│   │   ├── hover-card.tsx
+│   │   ├── input-otp.tsx
+│   │   ├── input.tsx
+│   │   ├── label.tsx
+│   │   ├── menubar.tsx
+│   │   ├── navigation-menu.tsx
+│   │   ├── pagination.tsx
+│   │   ├── popover.tsx
+│   │   ├── progress.tsx
+│   │   ├── radio-group.tsx
+│   │   ├── resizable.tsx
+│   │   ├── scroll-area.tsx
+│   │   ├── select.tsx
+│   │   ├── separator.tsx
+│   │   ├── sheet.tsx
+│   │   ├── sidebar.tsx
+│   │   ├── skeleton.tsx
+│   │   ├── slider.tsx
+│   │   ├── sonner.tsx
+│   │   ├── switch.tsx
+│   │   ├── table.tsx
+│   │   ├── tabs.tsx
+│   │   ├── textarea.tsx
+│   │   ├── toast.tsx
+│   │   ├── toaster.tsx
+│   │   ├── toggle-group.tsx
+│   │   ├── toggle.tsx
+│   │   ├── tooltip.tsx
+│   │   ├── use-mobile.tsx
+│   │   └── use-toast.ts
+│   └── user-setup-form.tsx
+├── components.json
+├── hooks
+│   ├── use-auth.ts
+│   ├── use-mobile.ts
+│   └── use-toast.ts
+├── lib
+│   ├── api.ts
+│   ├── constants
+│   │   ├── campo.ts
+│   │   └── routes.ts
+│   ├── features-context.tsx
+│   ├── features.ts
+│   ├── mocks.ts
+│   ├── plan-features.ts
+│   ├── sessionManager.ts
+│   ├── supabaseAdmin.ts
+│   ├── supabaseAuth.ts
+│   ├── supabaseClient.ts
+│   ├── supabaseUtils.ts
+│   ├── types.ts
+│   ├── utils
+│   │   ├── excel-export-new.ts
+│   │   ├── excel-export.ts
+│   │   ├── excel-export.ts.bak
+│   │   └── url.ts
+│   └── utils.ts
+├── middleware.ts
+├── next-env.d.ts
+├── next.config.mjs
+├── package-lock.json
+├── package.json
+├── pnpm-lock.yaml
+├── postcss.config.mjs
+├── public
+│   ├── Campo_panoramica.jpg
+│   ├── DroneView.mp4
+│   ├── DroneView.webm
+│   ├── logo-seedor.png
+│   ├── placeholder-logo.png
+│   ├── placeholder-logo.svg
+│   ├── placeholder-user.jpg
+│   ├── placeholder.jpg
+│   ├── placeholder.svg
+│   ├── seedor-logo-fondoblanco.png
+│   ├── seedor-logo-no-bg.png
+│   └── seedor-logo.png
+├── styles
+│   └── globals.css
+├── tailwind.config.js
+├── tree.txt
+└── tsconfig.json
+
+75 directories, 201 files

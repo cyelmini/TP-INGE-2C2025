@@ -1,5 +1,11 @@
+'use client'
+
 import { useEffect, useState } from 'react'
 import type { AuthUser } from './types'
+import { getProfessionalPlanConfig } from './plan-features'
+
+// Import server-side function from separate file
+export { getRuntimeFeatures } from './demo-runtime'
 
 function getPlanFeatures(planName: string): TenantFeature[] {
   const plan = planName.toLowerCase()
@@ -10,7 +16,7 @@ function getPlanFeatures(planName: string): TenantFeature[] {
     { feature_code: 'inventario', feature_name: 'Gestión de Inventario', is_enabled: true },
     { feature_code: 'ajustes', feature_name: 'Configuración', is_enabled: true },
     { feature_code: 'user_management', feature_name: 'Gestión de Usuarios', is_enabled: true },
-    { feature_code: 'trabajadores', feature_name: 'Gestión de Trabajadores', is_enabled: true, limit_value: 3 },
+    { feature_code: 'trabajadores', feature_name: 'Gestión de Trabajadores', is_enabled: true, limit_value: -1 },
   ]
 
   if (plan === 'basic' || plan === 'basico') {
@@ -22,12 +28,12 @@ function getPlanFeatures(planName: string): TenantFeature[] {
     ]
   }
 
-  if (plan === 'pro') {
+  if (plan === 'pro' || plan === 'professional') {
     return [
       ...baseFeatures,
       { feature_code: 'campo', feature_name: 'Gestión de Campo', is_enabled: true },
-      { feature_code: 'finanzas', feature_name: 'Gestión de Finanzas', is_enabled: false },
-      { feature_code: 'contactos', feature_name: 'Gestión de Contactos', is_enabled: false },
+      { feature_code: 'finanzas', feature_name: 'Gestión de Finanzas', is_enabled: true },
+      { feature_code: 'contactos', feature_name: 'Gestión de Contactos', is_enabled: true },
     ]
   }
 
@@ -73,6 +79,7 @@ interface FeatureContextType {
   canAccessModule: (module: string, userRole: string) => boolean
   isLoading: boolean
   refreshFeatures: () => Promise<void>
+  isDemo: boolean
 }
 
 import { createContext, useContext } from 'react'
@@ -96,11 +103,42 @@ export function FeatureProvider({ children, user }: FeatureProviderProps) {
   const [features, setFeatures] = useState<TenantFeature[]>([])
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isDemo, setIsDemo] = useState(false)
+
+  // Check for demo mode on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const demoMode = document.cookie.split(';').some(c => c.trim().startsWith('demo=1'))
+      setIsDemo(demoMode)
+    }
+  }, [])
 
   const loadFeatures = async () => {
     try {
       setIsLoading(true)
       
+      // Check if in demo mode
+      const isDemoMode = typeof window !== 'undefined' &&
+        document.cookie.split(';').some(c => c.trim().startsWith('demo=1'))
+
+      if (isDemoMode) {
+        // Demo mode: professional plan with all features
+        const professionalFeatures = getPlanFeatures('professional')
+        setFeatures(professionalFeatures)
+        setPlanInfo({
+          plan_name: 'professional',
+          plan_display_name: 'Plan Profesional (Demo)',
+          price_monthly: 79.99,
+          price_yearly: 799.90,
+          current_users: 1,
+          max_users: -1,
+          plan_active: true
+        })
+        setIsDemo(true)
+        setIsLoading(false)
+        return
+      }
+
       const tenantPlan = user.tenant?.plan || 'basic'
       
       const planFeatures = getPlanFeatures(tenantPlan)
@@ -110,6 +148,7 @@ export function FeatureProvider({ children, user }: FeatureProviderProps) {
         'basic': 'Plan Básico',
         'basico': 'Plan Básico', 
         'pro': 'Plan Profesional',
+        'professional': 'Plan Profesional',
         'enterprise': 'Plan Empresarial',
         'empresarial': 'Plan Empresarial'
       }
@@ -117,7 +156,8 @@ export function FeatureProvider({ children, user }: FeatureProviderProps) {
       const planPrices = {
         'basic': 29.99,
         'basico': 29.99,
-        'pro': 79.99, 
+        'pro': 79.99,
+        'professional': 79.99,
         'enterprise': 199.99,
         'empresarial': 199.99
       }
@@ -128,7 +168,7 @@ export function FeatureProvider({ children, user }: FeatureProviderProps) {
         price_monthly: planPrices[tenantPlan as keyof typeof planPrices] || 29.99,
         price_yearly: (planPrices[tenantPlan as keyof typeof planPrices] || 29.99) * 10,
         current_users: 1,
-        max_users: tenantPlan === 'enterprise' || tenantPlan === 'empresarial' ? -1 : (tenantPlan === 'pro' ? 10 : 3),
+        max_users: tenantPlan === 'enterprise' || tenantPlan === 'empresarial' ? -1 : (tenantPlan === 'pro' || tenantPlan === 'professional' ? 10 : 3),
         plan_active: true
       })
     } catch (error) {
@@ -143,24 +183,30 @@ export function FeatureProvider({ children, user }: FeatureProviderProps) {
   }
 
   useEffect(() => {
-    if (user) {
+    if (user || isDemo) {
       loadFeatures()
     }
-  }, [user])
+  }, [user, isDemo])
 
   const hasFeature = (featureCode: string): boolean => {
+    // In demo mode, all features are enabled
+    if (isDemo) return true
+
     const feature = features.find(f => f.feature_code === featureCode)
     return feature?.is_enabled || false
   }
 
   const roleModuleAccess: Record<string, string[]> = {
-    admin: ['dashboard', 'campo', 'empaque', 'finanzas', 'inventario', 'trabajadores', 'ajustes', 'user_management'],
+    admin: ['dashboard', 'campo', 'empaque', 'finanzas', 'inventario', 'trabajadores', 'contactos', 'ajustes', 'user_management'],
     campo: ['dashboard', 'campo', 'inventario', 'ajustes'],
     empaque: ['dashboard', 'empaque', 'inventario', 'ajustes'],
     finanzas: ['dashboard', 'finanzas', 'trabajadores', 'ajustes']
   }
 
   const canAccessModule = (module: string, userRole: string): boolean => {
+    // In demo mode, allow access to all modules
+    if (isDemo) return true
+
     if (!userRole || typeof userRole !== 'string') {
       console.warn('⚠️ canAccessModule: userRole is invalid:', userRole);
       return false;
@@ -197,7 +243,8 @@ export function FeatureProvider({ children, user }: FeatureProviderProps) {
     hasFeature,
     canAccessModule,
     isLoading,
-    refreshFeatures
+    refreshFeatures,
+    isDemo
   }
 
   return (
