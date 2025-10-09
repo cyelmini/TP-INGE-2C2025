@@ -56,7 +56,7 @@ export default function TrabajadoresRoutePage() {
           currentPage="trabajadores" 
         />
         <div className="flex-1 flex flex-col">
-          <TrabajadoresPage user={user} />
+          <TrabajadoresPage />
         </div>
       </div>
     </FeatureProvider>
