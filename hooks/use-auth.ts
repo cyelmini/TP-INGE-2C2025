@@ -62,11 +62,13 @@ export function useAuth(options: {
       setAuthChecking(false);
       
       if (redirectToLogin && !isSubpageUsingLayout.current) {
+        // Only redirect to login if we're sure there's no valid session
+        // Add a longer delay to allow context and session to load
         setTimeout(() => {
           if (!getParentUser() && !activeUser && !contextUser) {
             router.push("/login");
           }
-        }, 100);
+        }, 500);
       }
     } catch (err) {
       console.error('Error checking session:', err);
@@ -185,35 +187,46 @@ export function useAuth(options: {
   useEffect(() => {
     if (isSubpageUsingLayout.current) return;
     
+    // Don't do anything while still loading
     if (authChecking || contextLoading) {
       return;
     }
     
-    // Si no hay usuario, no hacer validaciones de roles
+    // Don't validate if no user
     if (!currentUser) {
       return;
     }
     
-    // Si el usuario no tiene rol, probablemente esté en proceso de logout
-    // No hacer validaciones en este caso
+    // Don't validate if no role (user might be logging out)
     if (!currentUser.rol) {
-
       return;
     }
     
-    // Solo validar roles si hay usuario completo con rol
-    // No redirigir si aún se están cargando los datos
-    // Agregar condición adicional: solo redirigir si el usuario tiene rol pero no el requerido
-    if (requireRoles.length > 0 && 
-        !hasRequiredRole && 
-        !authChecking && 
-        !contextLoading &&
-        currentUser && 
-        currentUser.rol && // Solo redirigir si ya tiene rol cargado
-        !requireRoles.includes(currentUser.rol)) { // Y ese rol no está en los requeridos
+    // Don't validate if no roles required
+    if (requireRoles.length === 0) {
+      return;
+    }
+    
+    // Check if user has required role
+    const userRole = currentUser.rol.toLowerCase();
+    const hasValidRole = requireRoles.some(role => role.toLowerCase() === userRole);
+    
+    // Only redirect if user definitely doesn't have access
+    if (!hasValidRole) {
+      const redirectTimer = setTimeout(() => {
+        // Double-check before redirecting
+        if (currentUser && 
+            currentUser.rol && 
+            !authChecking && 
+            !contextLoading &&
+            !requireRoles.some(role => role.toLowerCase() === currentUser.rol.toLowerCase())) {
+          
+          console.log('🔄 User role mismatch, redirecting to home. User role:', currentUser.rol, 'Required:', requireRoles);
+          router.replace("/home");
+        }
+      }, 1000); // Longer delay to allow navigation to complete
       
-      console.log('🔄 User role mismatch, redirecting to home. User role:', currentUser.rol, 'Required:', requireRoles);
-      router.push("/home");
+      return () => clearTimeout(redirectTimer);
     }
   }, [currentUser, hasRequiredRole, requireRoles, router, authChecking, contextLoading]);
 

@@ -4,7 +4,7 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Badge } from '../ui/badge'
 import { Trash2, UserPlus, Edit3, Shield, User, Package, DollarSign, Sprout, Mail, Phone, IdCard, Calendar, CheckCircle, Clock, XCircle, AlertCircle, AlertTriangle } from 'lucide-react'
 import { Alert, AlertDescription } from '../ui/alert'
@@ -575,9 +575,9 @@ export function UserManagement({ currentUser }: UserManagementProps) {
                 <UserPlus className="h-5 w-5 text-primary" />
                 Invitar Nuevo Usuario
               </DialogTitle>
-              <p className="text-sm text-gray-600 mt-2">
+              <DialogDescription>
                 El usuario recibirá un email de invitación para configurar su cuenta
-              </p>
+              </DialogDescription>
             </DialogHeader>
             
             <form onSubmit={handleCreateUser} className="space-y-4">
@@ -654,9 +654,9 @@ export function UserManagement({ currentUser }: UserManagementProps) {
               <Edit3 className="h-5 w-5 text-primary" />
               Editar Rol de Usuario
             </DialogTitle>
-            <p className="text-sm text-gray-600 mt-2">
+            <DialogDescription>
               Cambiar el rol de {editingUser?.full_name}
-            </p>
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
@@ -719,9 +719,9 @@ export function UserManagement({ currentUser }: UserManagementProps) {
               <AlertTriangle className="h-5 w-5" />
               Eliminar Usuario
             </DialogTitle>
-            <p className="text-sm text-gray-600 mt-2">
+            <DialogDescription>
               Esta acción no se puede deshacer
-            </p>
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
