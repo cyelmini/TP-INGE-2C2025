@@ -202,14 +202,14 @@ export default function PreprocesoFormModal({ open, onClose, onCreated, tenantId
                                 <Input
                                     name="ritmo_maquina"
                                     type="number"
-                                    step="1"
-                                    inputMode="numeric"
+                                    step="0.01"
+                                    inputMode="decimal"
                                     min={0}
                                     value={form.ritmo_maquina}
                                     onChange={(e) => setField("ritmo_maquina", e.target.value)}
                                     onKeyDown={blockInvalidNumberKeys}
                                     className={`${inputStrong} ${errors.ritmo_maquina ? inputError : ""}`}
-                                    placeholder="Ej: 12"
+                                    placeholder="Ej: 12.4"
                                 />
                                 {errors.ritmo_maquina && <p className="mt-1 text-xs text-red-600">{errors.ritmo_maquina}</p>}
                             </div>
