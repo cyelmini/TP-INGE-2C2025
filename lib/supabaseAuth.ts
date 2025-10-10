@@ -683,12 +683,168 @@ export const authService = {
     }
   },
 
+  acceptInvitationFromEmail: async (params: AcceptInvitationParams): Promise<{ success: boolean; error?: string; data?: any }> => {
+    try {
+      // Primero obtenemos los datos de la invitación
+      const invitationResult = await authService.getInvitationByToken(params.token)
+      if (!invitationResult.success || !invitationResult.data) {
+        return { success: false, error: invitationResult.error }
+      }
+
+      const invitation = invitationResult.data
+
+      if (!params.userData?.password || !params.userData?.fullName) {
+        return { success: false, error: 'Contraseña y nombre completo son requeridos' }
+      }
+
+      // Registrar el usuario con email y contraseña (con reintentos para rate limit)
+      let signUpData, signUpError
+      let attempts = 0
+      const maxAttempts = 3
+
+      while (attempts < maxAttempts) {
+        const result = await supabase.auth.signUp({
+          email: invitation.email,
+          password: params.userData.password,
+          options: {
+            data: {
+              full_name: params.userData.fullName,
+              phone: params.userData.phone || null
+            }
+          }
+        })
+
+        signUpData = result.data
+        signUpError = result.error
+
+        if (!signUpError) {
+          break // Éxito, salir del loop
+        }
+
+        // Si es error de rate limit, esperar y reintentar
+        if (signUpError.message.includes('you can only request this after')) {
+          attempts++
+          if (attempts < maxAttempts) {
+            console.log(`Rate limit hit, esperando 12 segundos antes de reintento ${attempts}/${maxAttempts}...`)
+            await new Promise(resolve => setTimeout(resolve, 12000)) // Esperar 12 segundos
+            continue
+          }
+        }
+
+        // Si es otro error, no reintentar
+        break
+      }
+
+      if (signUpError) {
+        if (signUpError.message.includes('you can only request this after')) {
+          return { success: false, error: 'Por favor espera unos segundos e intenta nuevamente. El sistema está procesando demasiadas solicitudes.' }
+        }
+        return { success: false, error: `Error al crear usuario: ${signUpError.message}` }
+      }
+
+      if (!signUpData.user) {
+        return { success: false, error: 'No se pudo crear el usuario' }
+      }
+
+      // Verificar límites del tenant
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('current_users, max_users')
+        .eq('id', invitation.tenant_id)
+        .single()
+
+      if (!tenant) {
+        return { success: false, error: 'Tenant no encontrado' }
+      }
+
+      if (tenant.current_users >= tenant.max_users) {
+        return { success: false, error: 'Se alcanzó el límite máximo de usuarios para este tenant' }
+      }
+
+      // Crear la membresía del usuario
+      const { data: membershipData, error: membershipError } = await supabase
+        .from('tenant_memberships')
+        .insert([{
+          tenant_id: invitation.tenant_id,
+          user_id: signUpData.user.id,
+          role_code: invitation.role_code,
+          status: 'active',
+          invited_by: invitation.invited_by,
+          accepted_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
+
+      if (membershipError) {
+        return { success: false, error: `Error al crear membresía: ${membershipError.message}` }
+      }
+
+      // Crear el perfil del usuario
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert([{
+          user_id: signUpData.user.id,
+          full_name: params.userData.fullName,
+          phone: params.userData.phone || null,
+          default_tenant_id: invitation.tenant_id,
+        }], { onConflict: 'user_id' })
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError)
+      }
+
+      // Actualizar contador de usuarios del tenant
+      await supabase
+        .from('tenants')
+        .update({ current_users: tenant.current_users + 1 })
+        .eq('id', invitation.tenant_id)
+
+      // Marcar invitación como aceptada
+      await supabase
+        .from('invitations')
+        .update({ 
+          accepted_at: new Date().toISOString()
+        })
+        .eq('id', invitation.id)
+
+      // Log de auditoría
+      await supabase
+        .from('audit_logs')
+        .insert([{
+          tenant_id: invitation.tenant_id,
+          actor_user_id: signUpData.user.id,
+          action: 'invitation_accepted', 
+          entity: 'invitation', 
+          entity_id: invitation.id, 
+          details: { 
+            email: invitation.email,
+            role: invitation.role_code,
+            flow: 'email_signup'
+          }
+        }])
+
+      return { 
+        success: true, 
+        data: { 
+          userId: signUpData.user.id, 
+          tenantId: invitation.tenant_id,
+          membership: membershipData,
+          role: invitation.role_code
+        } 
+      }
+
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Error inesperado al procesar invitación' }
+    }
+  },
+
   acceptInvitationWithSetup: async (params: AcceptInvitationParams): Promise<{ success: boolean; error?: string; data?: any }> => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.user) {
-        return { success: false, error: 'No hay sesión activa. Por favor, usa el link del email de invitación.' }
+        // Si no hay sesión, usamos el nuevo método
+        return authService.acceptInvitationFromEmail(params)
       }
 
       const invitationResult = await authService.getInvitationByToken(params.token)
@@ -775,27 +931,6 @@ export const authService = {
           accepted_at: new Date().toISOString()
         })
         .eq('id', invitation.id)
-
-      // Si es un admin, también crear registro en workers
-      if (invitation.role_code === 'admin' && params.userData) {
-        const { error: workerError } = await supabase
-          .from('workers')
-          .insert([{
-            tenant_id: invitation.tenant_id,
-            full_name: params.userData.fullName,
-            document_id: params.userData.documentId || 'N/A', // Default si no se proporciona
-            email: session.user.email,
-            phone: params.userData.phone || null,
-            area_module: 'admin', // Los admins tienen acceso a todo
-            membership_id: membershipData.id,
-            status: 'active'
-          }])
-
-        if (workerError) {
-          console.error('Error creating worker record for admin:', workerError)
-          // No devolver error, ya que el admin fue creado exitosamente
-        }
-      }
 
       await supabase
         .from('audit_logs')
@@ -1440,26 +1575,8 @@ export const authService = {
         }])
 
       if (profileError) {
-
-      }
-
-      const { data: workerData, error: workerError } = await supabase
-        .from('workers')
-        .insert([{
-          tenant_id: invitation.tenant_id,
-          full_name: params.workerData.fullName,
-          document_id: params.workerData.documentId || '',
-          email: invitation.email,
-          phone: params.workerData.phone || null,
-          area_module: 'administracion',
-          membership_id: membershipData.id,
-          status: 'active'
-        }])
-        .select()
-        .single()
-
-      if (workerError) {
-
+        console.error('Error creating profile:', profileError)
+        // Continue, profile creation is not critical
       }
 
       const { error: updateError } = await supabase
@@ -1488,7 +1605,6 @@ export const authService = {
           entity_id: invitation.id, 
           details: { 
             email: invitation.email,
-            worker_id: params.workerData.workerId,
             context: 'admin_setup_complete'
           }
         }])

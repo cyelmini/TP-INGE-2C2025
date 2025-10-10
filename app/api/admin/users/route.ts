@@ -79,16 +79,7 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching profiles:', profilesError);
     }
 
-    // Get corresponding workers data to complement the information (optional)
-    const { data: workers, error: workersError } = await supabaseAdmin
-      .from('workers')
-      .select('*')
-      .eq('tenant_id', currentMembership.tenant_id)
-      .in('area_module', ['empaque', 'finanzas', 'campo']); // Excluir admin
-      
-    if (workersError) {
-      console.error('Error fetching workers:', workersError);
-    }
+    // Users and workers are now independent modules
       
 
 
@@ -114,22 +105,19 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, any>);
 
-    // Transform the data to match the expected format
+    // Transform the data to match the expected format (users module independent from workers)
     const transformedUsers = (allMemberships || []).map((membership: any) => {
-      // Find corresponding worker data (optional)
-      const worker = workers?.find(w => w.membership_id === membership.id);
       const profile = profilesMap[membership.user_id];
       
       return {
         id: membership.id, // Use membership.id as primary ID
-        email: authUserMap[membership.user_id] || profile?.email || worker?.email || '',
-        full_name: profile?.full_name || worker?.full_name || '',
+        email: authUserMap[membership.user_id] || '',
+        full_name: profile?.full_name || '',
         role_code: membership.role_code,
         status: membership.accepted_at ? 'active' : 'pending',
         created_at: membership.created_at || new Date().toISOString(),
         accepted_at: membership.accepted_at,
-        phone: profile?.phone || worker?.phone || '',
-        document_id: worker?.document_id || '',
+        phone: profile?.phone || '',
         membership: {
           id: membership.id,
           role_code: membership.role_code,
@@ -249,61 +237,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update user role' }, { status: 500 });
     }
 
-    // Also update the workers table if exists
-    console.log('🔄 Updating area_module in workers table for membership_id:', targetMembership.id, 'to role:', role);
-    
-    // First, let's check if there are workers for this tenant and what their membership_ids look like
-    const { data: allWorkers, error: allWorkersError } = await supabaseAdmin
-      .from('workers')
-      .select('id, full_name, area_module, membership_id, email')
-      .eq('tenant_id', currentMembership.tenant_id);
-    
-    console.log('📋 All workers in tenant:', allWorkers);
-    if (allWorkersError) console.error('❌ Error fetching all workers:', allWorkersError);
-    
-    // Try to find worker by email as backup since membership_id might be null
-    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
-    const userEmail = authUser.user?.email;
-    console.log('📧 Looking for worker with email:', userEmail);
-    
-    const { data: workerUpdateData, error: workerUpdateError, count: workerUpdateCount } = await supabaseAdmin
-      .from('workers')
-      .update({ area_module: role })
-      .eq('membership_id', targetMembership.id)
-      .select('id, area_module, membership_id, email');
-
-    if (workerUpdateError) {
-      console.error('❌ Error updating worker area_module:', workerUpdateError);
-    } else {
-      console.log('✅ Worker area_module updated successfully. Affected rows:', workerUpdateCount);
-      console.log('📋 Updated worker data:', workerUpdateData);
-    }
-    
-    // If membership_id update didn't work, try by email
-    if ((workerUpdateCount || 0) === 0 && userEmail) {
-      console.log('⚠️ No workers updated by membership_id, trying by email...');
-      const { data: emailUpdateData, error: emailUpdateError, count: emailUpdateCount } = await supabaseAdmin
-        .from('workers')
-        .update({ 
-          area_module: role,
-          membership_id: targetMembership.id // Also fix the membership_id while we're at it
-        })
-        .eq('email', userEmail)
-        .eq('tenant_id', currentMembership.tenant_id)
-        .select('id, area_module, membership_id, email');
-      
-      if (emailUpdateError) {
-        console.error('❌ Error updating worker by email:', emailUpdateError);
-      } else {
-        console.log('✅ Worker updated by email. Affected rows:', emailUpdateCount);
-        console.log('📋 Updated worker data by email:', emailUpdateData);
-      }
-    }
+    console.log('✅ User role updated successfully in tenant_memberships');
 
     return NextResponse.json({ 
       success: true,
-      message: 'User role updated successfully',
-      workerUpdated: !workerUpdateError && (workerUpdateCount || 0) > 0
+      message: 'User role updated successfully'
     });
 
   } catch (error) {
@@ -366,38 +304,7 @@ export async function DELETE(request: NextRequest) {
 
     console.log('📋 Target membership found:', targetMembership);
 
-    // Also check if there's a worker record for this membership
-    const { data: existingWorker, error: workerCheckError } = await supabaseAdmin
-      .from('workers')
-      .select('*')
-      .eq('membership_id', targetMembership.id)
-      .single();
-
-    if (workerCheckError && workerCheckError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('❌ Error checking worker:', workerCheckError);
-    } else if (existingWorker) {
-      console.log('👷 Worker found for deletion:', existingWorker);
-    } else {
-      console.log('ℹ️ No worker record found for membership_id:', targetMembership.id);
-    }
-
-    // Delete from workers table first (only if worker exists)
-    if (existingWorker) {
-      console.log('🗑️ Deleting specific worker with ID:', existingWorker.id);
-      const { error: workersDeleteError, count: deletedWorkersCount } = await supabaseAdmin
-        .from('workers')
-        .delete({ count: 'exact' })
-        .eq('id', existingWorker.id) // Use specific worker ID
-        .eq('membership_id', targetMembership.id); // Additional safety check
-
-      if (workersDeleteError) {
-        console.error('❌ Error deleting worker:', workersDeleteError);
-      } else {
-        console.log('✅ Successfully deleted worker. Rows affected:', deletedWorkersCount);
-      }
-    } else {
-      console.log('ℹ️ No worker record to delete for membership_id:', targetMembership.id);
-    }
+    console.log('� Proceeding to delete user membership without affecting workers table');
 
     // Delete from tenant_memberships
     console.log('🗑️ Deleting from tenant_memberships for id:', targetMembership.id);
@@ -413,49 +320,7 @@ export async function DELETE(request: NextRequest) {
     
     console.log('✅ Successfully deleted from tenant_memberships');
 
-    // Final verification: ensure no orphaned workers remain for this specific user
-    // Only if we didn't delete a worker above
-    if (!existingWorker) {
-      // Get user email for backup verification
-      let userEmail = '';
-      try {
-        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
-        userEmail = authUser.user?.email || '';
-      } catch (error) {
-        console.error('Error getting user email for verification:', error);
-      }
-
-      if (userEmail) {
-        const { data: orphanedWorkers, error: verifyError } = await supabaseAdmin
-          .from('workers')
-          .select('id, email, full_name')
-          .eq('tenant_id', currentMembership.tenant_id)
-          .eq('email', userEmail); // Match by email as backup
-
-        if (verifyError && verifyError.code !== 'PGRST116') {
-          console.error('❌ Error checking orphaned workers:', verifyError);
-        } else if (orphanedWorkers && orphanedWorkers.length > 0) {
-          console.log('⚠️ Found orphaned workers for user email:', userEmail);
-          
-          // Clean up orphaned workers one by one with specific IDs
-          for (const orphanedWorker of orphanedWorkers) {
-            const { error: cleanupError } = await supabaseAdmin
-              .from('workers')
-              .delete()
-              .eq('id', orphanedWorker.id)
-              .eq('tenant_id', currentMembership.tenant_id); // Additional safety
-            
-            if (cleanupError) {
-              console.error('❌ Error cleaning up orphaned worker:', cleanupError);
-            } else {
-              console.log('✅ Cleaned up orphaned worker:', orphanedWorker.id);
-            }
-          }
-        } else {
-          console.log('✅ No orphaned workers found');
-        }
-      }
-    }
+    console.log('ℹ️ Workers table is independent from users - no automatic cleanup needed');
 
     // Check if user has any other memberships
     const { data: otherMemberships, error: otherError } = await supabaseAdmin
