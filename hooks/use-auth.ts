@@ -1,10 +1,9 @@
 // hooks/use-auth.ts
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useUser, useUserActions } from "../components/auth/UserContext";
+import { useUser } from "../components/auth/UserContext";
 import { useEmpaqueAuth } from "../components/empaque/EmpaqueAuthContext";
 import { authService } from "../lib/supabaseAuth";
-import { getSessionManager } from "../lib/sessionManager";
 
 declare global {
   interface Window {
@@ -20,7 +19,6 @@ export function useAuth(options: {
 } = {}) {
   const { redirectToLogin = true, requireRoles = [], useLayoutSession = false } = options;
   const { user: contextUser, loading: contextLoading } = useUser();
-  const { clearUser } = useUserActions();
   const [activeUser, setActiveUser] = useState<any>(null);
   const router = useRouter();
   
@@ -34,19 +32,6 @@ export function useAuth(options: {
     sessionCheckAttempted.current = true;
     
     try {
-      const sessionManager = getSessionManager();
-      
-      // Primero intentar obtener de la sesión de la pestaña
-      let tabUser = sessionManager.getCurrentUser();
-      
-      if (tabUser) {
-
-        setActiveUser(tabUser);
-        setAuthChecking(false);
-        return;
-      }
-
-      // Si no hay sesión de pestaña, verificar con getSafeSession
       const { user: sessionUser, error } = await authService.getSafeSession();
       
       if (sessionUser) {
@@ -63,7 +48,7 @@ export function useAuth(options: {
       
       if (redirectToLogin && !isSubpageUsingLayout.current) {
         setTimeout(() => {
-          if (!getParentUser() && !activeUser && !contextUser) {
+          if (!getParentUser() && !activeUser && !contextUser && !authService.getCurrentUser()) {
             router.push("/login");
           }
         }, 100);
@@ -80,25 +65,20 @@ export function useAuth(options: {
       return;
     }
     
-    const sessionManager = getSessionManager();
-    
-    // Primero intentar la sesión de la pestaña
-    const tabUser = sessionManager.getCurrentUser();
-    if (tabUser) {
-      setActiveUser(tabUser);
-      setAuthChecking(false);
-      return;
-    }
-    
-    // Luego el contexto
     if (contextUser) {
       setActiveUser(contextUser);
       setAuthChecking(false);
       return;
     }
     
-    // Finalmente verificar sesión
-    if (contextLoading || (!contextUser && !tabUser)) {
+    const directUser = authService.getCurrentUser();
+    if (directUser) {
+      setActiveUser(directUser);
+      setAuthChecking(false);
+      return;
+    }
+    
+    if (contextLoading || (!contextUser && !directUser)) {
       checkAndGetSession();
     } else {
       setAuthChecking(false);
@@ -152,6 +132,8 @@ export function useAuth(options: {
         } else if (attempts >= maxAttempts) {
           if (contextUser) {
             setActiveUser(contextUser);
+          } else if (authService.getCurrentUser()) {
+            setActiveUser(authService.getCurrentUser());
           } else {
             checkAndGetSession();
           }
@@ -164,14 +146,7 @@ export function useAuth(options: {
   }, [useLayoutSession, contextUser]);
   
   const parentUser = useLayoutSession ? (empaqueUser || getParentUser()) : null;
-  const sessionManager = getSessionManager();
-  
-  // Usar peek para evitar efectos secundarios durante logout
-  const tabUser = activeUser ? null : sessionManager.peekCurrentUser();
-  
-  // Prioridad: parentUser (empaque) > activeUser (estado local) > tabUser (sessionManager) > contextUser (global)
-  // Si activeUser es null explícitamente (logout), solo usar parentUser
-  const currentUser = parentUser || (activeUser === null ? null : (activeUser || tabUser || contextUser));
+  const currentUser = parentUser || activeUser || contextUser || authService.getCurrentUser();
   
   const hasRequiredRole = isSubpageUsingLayout.current ? true : (
     !currentUser ? false : (
@@ -189,21 +164,14 @@ export function useAuth(options: {
       return;
     }
     
-    // Si no hay usuario, no hacer validaciones de roles
-    if (!currentUser) {
-      return;
-    }
-    
-    // Si el usuario no tiene rol, probablemente esté en proceso de logout
-    // No hacer validaciones en este caso
-    if (!currentUser.rol) {
-
-      return;
-    }
-    
-    // Solo validar roles si hay usuario completo con rol
-    if (requireRoles.length > 0 && !hasRequiredRole) {
-      
+    if (currentUser && currentUser.rol && requireRoles.length > 0 && !hasRequiredRole) {
+      console.error('⚠️⚠️⚠️ REDIRECTING TO /HOME - User does not have required role');
+      console.error('Current user:', {
+        email: currentUser.email,
+        rol: currentUser.rol,
+        tenantId: currentUser.tenantId
+      });
+      console.error('Required roles:', requireRoles);
       router.push("/home");
     }
   }, [currentUser, hasRequiredRole, requireRoles, router, authChecking, contextLoading]);
@@ -231,31 +199,12 @@ export function useAuth(options: {
   }
 
   const handleLogout = async () => {
-
-    
-    try {
-      // Primero limpiar todos los estados locales inmediatamente
-      setActiveUser(null);
-      clearUser(); // Limpiar también el UserContext
-      
-      // Limpiar el contexto de ventana
-      if (typeof window !== 'undefined') {
-        window.empaqueLayoutUser = undefined;
-      }
-      
-      // Luego hacer el logout del servicio
-      await authService.logout();
-      
-
-      
-      // Redirigir inmediatamente
-      router.push("/login");
-      
-    } catch (error) {
-
-      // Aún así redirigir a login si hay error
-      router.push("/login");
+    await authService.logout();
+    setActiveUser(null);
+    if (typeof window !== 'undefined') {
+      window.empaqueLayoutUser = undefined;
     }
+    router.push("/login");
   };
 
   return {

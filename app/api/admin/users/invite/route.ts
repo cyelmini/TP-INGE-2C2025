@@ -95,6 +95,8 @@ export async function POST(request: NextRequest) {
         error: 'Failed to create membership: ' + membershipError.message 
       }, { status: 500 });
     }
+
+    console.log('🔄 Creating profile for user:', authData.user.id);
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert([{
@@ -107,7 +109,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError) {
+      console.error('❌ Error creating profile:', profileError);
+      console.error('❌ Profile error details:', profileError.details);
+      console.error('❌ Profile error hint:', profileError.hint);
     } else {
+      console.log('✅ Profile created successfully:', profileData);
     }
 
     const { data: worker, error: workerError } = await supabaseAdmin

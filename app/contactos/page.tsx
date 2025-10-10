@@ -13,6 +13,8 @@ export default function ContactosRoutePage() {
   });
   const router = useRouter();
 
+  console.log('📇 Contactos Page - User:', user?.email, 'Rol:', user?.rol, 'Loading:', loading);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

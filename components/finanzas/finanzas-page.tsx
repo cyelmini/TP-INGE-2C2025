@@ -9,12 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { FinanzasFormModal } from "./finanzas-form-modal"
 import { finanzasApi } from "../../lib/api"
-import { useAuth } from "../../hooks/use-auth"
+import { authService } from "../../lib/supabaseAuth"
 import type { MovimientoCaja } from "../../lib/mocks"
 import { Plus, Search, Download, DollarSign, TrendingUp, TrendingDown, FileText } from "lucide-react"
 
 export function FinanzasPage() {
-  const { user, loading: authLoading } = useAuth({ requireRoles: ['admin', 'finanzas'] })
   const [movimientos, setMovimientos] = useState<MovimientoCaja[]>([])
   const [filteredMovimientos, setFilteredMovimientos] = useState<MovimientoCaja[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -22,6 +21,8 @@ export function FinanzasPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterTipo, setFilterTipo] = useState("all")
   const [filterCategoria, setFilterCategoria] = useState("all")
+
+  const user = authService.getCurrentUser()
 
   useEffect(() => {
     loadMovimientos()
@@ -109,15 +110,7 @@ export function FinanzasPage() {
 
   const uniqueCategories = [...new Set(movimientos.map((m) => m.categoria))]
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Cargando...</p>
-      </div>
-    )
-  }
-
-  if (!user) {
+  if (!user || !["admin", "finanzas"].includes(user.rol?.toLowerCase())) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">No tienes permisos para acceder a esta sección</p>

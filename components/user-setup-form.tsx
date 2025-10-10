@@ -7,7 +7,7 @@ import {
   MapPin, Package, DollarSign
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { authService, validators } from "../lib/supabaseAuth";
@@ -325,10 +325,6 @@ export default function UserSetupForm({ userType = 'module-user', onComplete }: 
             sessionStorage.removeItem(`${invitation.role_code}_signup_data`);
         }
 
-        // Cerrar sesión para evitar inconsistencias
-        console.log('🔄 Logging out user to avoid session conflicts...');
-        await authService.logout();
-
         setCurrentStep('complete');
         }
 
@@ -376,7 +372,7 @@ export default function UserSetupForm({ userType = 'module-user', onComplete }: 
           </div>
           <CardTitle className="text-2xl font-bold text-slate-800">{roleConfig.successTitle}</CardTitle>
           <CardDescription className="text-slate-600 mt-2">
-            Ahora podés iniciar sesión en <strong className="text-[#81C101]">{invitation?.tenants?.name}</strong>
+            Ya podés acceder a <strong className="text-[#81C101]">{invitation?.tenants?.name}</strong>
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
@@ -390,14 +386,14 @@ export default function UserSetupForm({ userType = 'module-user', onComplete }: 
             </p>
           </div>
         </CardContent>
-        <CardFooter className="justify-center pt-4">
+        <CardContent className="justify-center pt-4">
           <Button 
-            onClick={() => router.push("/login")}
+            onClick={() => router.push("/home")}
             className="w-full bg-gradient-to-r from-[#81C101] to-[#9ED604] hover:from-[#73AC01] hover:to-[#8BC34A] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
           >
-            Ir al inicio de sesión
+            Ir al dashboard
           </Button>
-        </CardFooter>
+        </CardContent>
       </Card>
     );
   }

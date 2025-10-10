@@ -36,6 +36,7 @@ if (supabaseUrl && supabaseServiceKey) {
 // Function to get worker by user ID (membership user_id) with proper permissions
 export async function getWorkerByUserId(userId: string): Promise<{ data: any | null; error: any }> {
   if (!supabaseAdmin) {
+    console.log('📝 Service role not available, using regular client with RLS');
     const { supabase } = await import('./supabaseClient');
     
     try {
@@ -62,6 +63,7 @@ export async function getWorkerByUserId(userId: string): Promise<{ data: any | n
       return { data: null, error };
     }
   } else {
+    console.log('🔧 Using service role client to bypass RLS');
     
     try {
       // Get membership first
@@ -92,6 +94,7 @@ export async function getWorkerByUserId(userId: string): Promise<{ data: any | n
 // Function to get worker by email with proper permissions
 export async function getWorkerByEmail(email: string): Promise<{ data: any | null; error: any }> {
   if (!supabaseAdmin) {
+    console.log('📝 Service role not available for email lookup, using regular client');
     const { supabase } = await import('./supabaseClient');
     
     try {
@@ -106,6 +109,7 @@ export async function getWorkerByEmail(email: string): Promise<{ data: any | nul
       return { data: null, error };
     }
   } else {
+    console.log('🔧 Using service role client for email lookup');
     
     try {
       const { data: worker, error } = await supabaseAdmin
@@ -124,6 +128,7 @@ export async function getWorkerByEmail(email: string): Promise<{ data: any | nul
 // Function to update worker with proper permissions
 export async function updateWorkerMembership(workerId: string, membershipId: string): Promise<{ data: any | null; error: any }> {
   if (!supabaseAdmin) {
+    console.log('📝 Service role not available for update, using regular client');
     const { supabase } = await import('./supabaseClient');
     
     try {
@@ -139,6 +144,7 @@ export async function updateWorkerMembership(workerId: string, membershipId: str
       return { data: null, error };
     }
   } else {
+    console.log('🔧 Using service role client for worker update');
     
     try {
       const { data, error } = await supabaseAdmin

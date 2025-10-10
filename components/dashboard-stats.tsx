@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
-import { useAuth } from "../hooks/use-auth"
+import { authService } from "../lib/supabaseAuth"
 import { tareasCampo, movimientosCaja, inventario } from "../lib/mocks"
 import { Calendar, TrendingUp, AlertTriangle, DollarSign } from "lucide-react"
 
@@ -11,7 +11,7 @@ function cn(...classes: (string | undefined)[]) {
 }
 
 export function DashboardStats() {
-  const { user } = useAuth()
+  const user = authService.getCurrentUser()
   if (!user) return null
 
   const tenantTareas = tareasCampo.filter((t) => t.tenantId === user.tenantId)
