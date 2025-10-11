@@ -1,0 +1,41 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 2
+      name: "Smoke test - warm up"
+  processor: "./processor.js"
+  plugins:
+    expect: {}
+  ensure:
+    thresholds:
+      - http.response_time.p95: 800
+      - http.response_time.p99: 1500
+      - http.request_rate: 2
+      - errors.rate: 1
+
+scenarios:
+  - name: "Smoke - Health Check"
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - think: 1
+
+  - name: "Smoke - Login Page Load"
+    flow:
+      - get:
+          url: "/login"
+          expect:
+            - statusCode: 200
+            - contentType: text/html
+      - think: 2
+
+  - name: "Smoke - API Health"
+    flow:
+      - get:
+          url: "/api/auth/me"
+          expect:
+            - statusCode: [200, 401]
+      - think: 1

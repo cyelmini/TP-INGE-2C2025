@@ -18,6 +18,7 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.test
 
 # vercel
 .vercel
@@ -26,3 +27,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# Test reports and coverage
+/reports/
+/coverage/
+*.log
+/artillery-output/
+
+# Jest
+/jest-cache/

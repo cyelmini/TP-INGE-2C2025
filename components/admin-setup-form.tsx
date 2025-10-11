@@ -101,9 +101,21 @@ export default function AdminSetupForm() {
           console.log('🔧 AdminSetupForm: Tenant limits result:', { limitsSuccess, limitsData });
           
           if (limitsSuccess && limitsData) {
-            setTenantPlan(limitsData.plan);
-            const available = Object.keys(AVAILABLE_MODULES).filter(moduleId => 
-              AVAILABLE_MODULES[moduleId as keyof typeof AVAILABLE_MODULES].available.includes(limitsData.plan)
+            console.log('🎯 AdminSetupForm: Setting tenant plan:', limitsData.plan);
+            setTenantPlan(limitsData.plan || 'basico');
+
+            const planToUse = limitsData.plan || 'basico';
+            const available = Object.keys(AVAILABLE_MODULES).filter(moduleId =>
+              AVAILABLE_MODULES[moduleId as keyof typeof AVAILABLE_MODULES].available.includes(planToUse)
+            );
+            console.log('📦 AdminSetupForm: Plan to use:', planToUse, 'Available modules:', available);
+            setAvailableModules(available);
+          } else {
+            // Fallback: si no hay límites, usar plan básico por defecto
+            console.warn('⚠️ AdminSetupForm: No tenant limits found, using basic plan as fallback');
+            setTenantPlan('basico');
+            const available = Object.keys(AVAILABLE_MODULES).filter(moduleId =>
+              AVAILABLE_MODULES[moduleId as keyof typeof AVAILABLE_MODULES].available.includes('basico')
             );
             setAvailableModules(available);
           }
@@ -143,12 +155,21 @@ export default function AdminSetupForm() {
         
         if (limitsSuccess && limitsData) {
           console.log('🎯 AdminSetupForm: Setting tenant plan:', limitsData.plan);
-          setTenantPlan(limitsData.plan);
-          
-          const available = Object.keys(AVAILABLE_MODULES).filter(moduleId => 
-            AVAILABLE_MODULES[moduleId as keyof typeof AVAILABLE_MODULES].available.includes(limitsData.plan)
+          setTenantPlan(limitsData.plan || 'basico');
+
+          const planToUse = limitsData.plan || 'basico';
+          const available = Object.keys(AVAILABLE_MODULES).filter(moduleId =>
+            AVAILABLE_MODULES[moduleId as keyof typeof AVAILABLE_MODULES].available.includes(planToUse)
           );
-          console.log('📦 AdminSetupForm: Available modules:', available);
+          console.log('📦 AdminSetupForm: Plan to use:', planToUse, 'Available modules:', available);
+          setAvailableModules(available);
+        } else {
+          // Fallback: si no hay límites, usar plan básico por defecto
+          console.warn('⚠️ AdminSetupForm: No tenant limits found, using basic plan as fallback');
+          setTenantPlan('basico');
+          const available = Object.keys(AVAILABLE_MODULES).filter(moduleId =>
+            AVAILABLE_MODULES[moduleId as keyof typeof AVAILABLE_MODULES].available.includes('basico')
+          );
           setAvailableModules(available);
         }
 

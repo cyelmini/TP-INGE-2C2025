@@ -313,3 +313,71 @@ export interface EgresoFruta {
   documentoReferencia?: string
   observaciones?: string
 }
+
+// Tipos para tareas y asistencia
+export type TaskType = "insecticida" | "fertilizante" | "poda" | "riego" | "cosecha" | "mantenimiento" | "otro";
+export type TaskStatus = "pendiente" | "en-curso" | "completada" | "cancelada";
+
+export interface Task {
+  id: string
+  tenant_id: string
+  farm_id?: string
+  lot_id?: string
+  title: string
+  description?: string
+  task_type: TaskType
+  type_code?: string // Para compatibilidad con DB
+  status: TaskStatus
+  status_code?: string // Para compatibilidad con DB
+  assigned_to?: string
+  responsible_membership_id?: string | null // Para compatibilidad con componentes
+  worker_id?: string | null // Para compatibilidad con componentes
+  scheduled_date?: string
+  completed_date?: string
+  created_by: string
+  created_at: string
+  updated_at?: string
+}
+
+export interface CreateTaskData {
+  farm_id?: string
+  lot_id?: string
+  title: string
+  description?: string
+  task_type: TaskType
+  type_code?: string // Para compatibilidad con DB
+  status?: TaskStatus
+  status_code?: string // Para compatibilidad con DB
+  assigned_to?: string
+  responsible_membership_id?: string | null
+  worker_id?: string | null
+  scheduled_date?: string
+}
+
+export type AttendanceStatus = "presente" | "ausente" | "tardanza" | "permiso" | "vacaciones";
+
+export interface AttendanceRecord {
+  id: string
+  tenant_id: string
+  worker_id: string
+  date: string
+  status: AttendanceStatus
+  check_in_time?: string
+  check_out_time?: string
+  hours_worked?: number
+  notes?: string
+  created_by: string
+  created_at: string
+  updated_at?: string
+  worker?: Worker
+}
+
+export interface CreateAttendanceData {
+  worker_id: string
+  date: string
+  status: AttendanceStatus
+  check_in_time?: string
+  check_out_time?: string
+  hours_worked?: number
+  notes?: string
+}

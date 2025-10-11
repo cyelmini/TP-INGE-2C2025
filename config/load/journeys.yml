@@ -1,0 +1,152 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp up load"
+    - duration: 60
+      arrivalRate: 20
+      name: "Sustained load"
+  processor: "./processor.js"
+  plugins:
+    expect: {}
+  ensure:
+    thresholds:
+      - http.response_time.p95: 800
+      - http.response_time.p99: 1500
+      - http.requests: 300
+      - errors.rate: 1
+
+scenarios:
+  - name: "Journey 1 - Authentication Flow"
+    weight: 40
+    flow:
+      # Cargar página de login
+      - get:
+          url: "/login"
+          expect:
+            - statusCode: 200
+      - think: 2
+
+      # Realizar login (API endpoint)
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@seedor.com"
+            password: "test123456"
+          capture:
+            - json: "$.session.access_token"
+              as: "authToken"
+          expect:
+            - statusCode: [200, 201]
+      - think: 1
+
+      # Verificar perfil autenticado
+      - get:
+          url: "/api/auth/me"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      - think: 2
+
+  - name: "Journey 2 - Empaque Operations"
+    weight: 30
+    flow:
+      # Login previo
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@seedor.com"
+            password: "test123456"
+          capture:
+            - json: "$.session.access_token"
+              as: "authToken"
+      - think: 1
+
+      # Cargar página de ingreso de fruta
+      - get:
+          url: "/empaque/ingreso-fruta"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: [200, 302]
+      - think: 3
+
+      # Obtener lista de ingresos (si existe endpoint)
+      - get:
+          url: "/api/empaque/ingresos"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: [200, 404]
+      - think: 2
+
+  - name: "Journey 3 - Admin Operations"
+    weight: 20
+    flow:
+      # Login admin
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "admin@seedor.com"
+            password: "admin123456"
+          capture:
+            - json: "$.session.access_token"
+              as: "adminToken"
+      - think: 1
+
+      # Listar usuarios
+      - get:
+          url: "/api/admin/users"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: [200, 401, 403]
+      - think: 2
+
+      # Verificar workers
+      - get:
+          url: "/api/workers"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: [200, 401, 403]
+      - think: 1
+
+  - name: "Journey 4 - Campo Access"
+    weight: 10
+    flow:
+      # Login
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@seedor.com"
+            password: "test123456"
+          capture:
+            - json: "$.session.access_token"
+              as: "authToken"
+      - think: 1
+
+      # Acceder a campos
+      - get:
+          url: "/campo"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: [200, 302]
+      - think: 2
+
+      # Cargar página de crear campo
+      - get:
+          url: "/crear-campo"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: [200, 302]
+      - think: 3
+
